@@ -107,13 +107,27 @@ module StripeMock
           customer[:default_source] = new_card[:id]
         end
 
-        allowed_params = %w(id customer application_fee_percent coupon items metadata plan quantity source tax_percent trial_end trial_period_days current_period_start created prorate billing_cycle_anchor billing days_until_due idempotency_key enable_incomplete_payments cancel_at_period_end default_tax_rates payment_behavior pending_invoice_item_interval default_payment_method collection_method off_session trial_from_plan proration_behavior backdate_start_date transfer_data expand automatic_tax payment_settings trial_settings promotion_code)
+        allowed_params = %w(id customer application_fee_percent coupon items
+          metadata plan quantity source tax_percent trial_end trial_period_days
+          current_period_start created prorate billing_cycle_anchor
+          billing days_until_due idempotency_key enable_incomplete_payments
+          cancel_at_period_end default_tax_rates payment_behavior
+          pending_invoice_item_interval default_payment_method collection_method
+          off_session trial_from_plan proration_behavior backdate_start_date
+          transfer_data expand automatic_tax payment_settings trial_settings
+          promotion_code latest_invoice)
         unknown_params = params.keys - allowed_params.map(&:to_sym)
         if unknown_params.length > 0
           raise Stripe::InvalidRequestError.new("Received unknown parameter: #{unknown_params.join}", unknown_params.first.to_s, http_status: 400)
         end
 
-        subscription = Data.mock_subscription({ id: (params[:id] || new_id('su')) })
+        pi_status = params.dig(:latest_invoice, :payment_intent, :status)
+        status = subscription_status_for(pi_status)
+
+        subscription = Data.mock_subscription(params.merge({
+          id: (params[:id] || new_id('su')),
+          status: status
+         }))
         subscription = resolve_subscription_changes(subscription, subscription_plans, customer, params)
         if headers[:idempotency_key]
           subscription[:idempotency_key] = headers[:idempotency_key]
@@ -402,6 +416,15 @@ module StripeMock
         if status == 'canceled'
           message = "No such subscription: #{id}"
           raise Stripe::InvalidRequestError.new(message, 'subscription', http_status: 404)
+        end
+      end
+
+      def subscription_status_for(payment_intent_status)
+        case payment_intent_status
+        when "requires_action"
+          "incomplete"
+        else
+          "active"
         end
       end
     end
