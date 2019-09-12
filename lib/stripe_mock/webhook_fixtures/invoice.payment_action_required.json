@@ -50,6 +50,7 @@
       "due_date": null,
       "ending_balance": 0,
       "footer": null,
+      "forgiven": false,
       "hosted_invoice_url": "https://invoice.stripe.com/i/acct_0000000000000000/test_00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
       "invoice_pdf": "https://pay.stripe.com/invoice/acct_0000000000000000/test_000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000/pdf?s=ap",
       "last_finalization_error": null,
