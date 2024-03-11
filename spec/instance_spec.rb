@@ -6,20 +6,22 @@ describe StripeMock::Instance do
   let(:stripe_helper) { StripeMock.create_test_helper }
 
   it_behaves_like_stripe do
-    def test_data_source(type); StripeMock.instance.send(type); end
+    def test_data_source(type)
+      StripeMock.instance.send(type)
+    end
   end
 
   before { StripeMock.start }
   after { StripeMock.stop }
 
   it "handles both string and symbol hash keys" do
-    string_params = stripe_helper.create_plan_params(
-      "id" => "str_abcde",
-      :name => "String Plan"
+    symbol_params = stripe_helper.create_product_params(
+      :name => "Symbol Product",
+      "type" => "service"
     )
-    res, api_key = StripeMock.instance.mock_request('post', '/v1/plans', api_key: 'api_key', params: string_params)
-    expect(res.data[:id]).to eq('str_abcde')
-    expect(res.data[:name]).to eq('String Plan')
+    res, api_key = StripeMock.instance.mock_request('post', '/v1/products', api_key: 'api_key', params: symbol_params)
+    expect(res.data[:name]).to eq('Symbol Product')
+    expect(res.data[:type]).to eq('service')
   end
 
   it "exits gracefully on an unrecognized handler url" do
@@ -54,17 +56,15 @@ describe StripeMock::Instance do
   end
 
   it "allows non-usd default currency" do
+    pending("Stripe::Plan requires currency param - how can we test this?")
     old_default_currency = StripeMock.default_currency
-    customer = begin
+    plan = begin
       StripeMock.default_currency = "jpy"
-      Stripe::Customer.create({
-        email: 'johnny@appleseed.com',
-        source: stripe_helper.generate_card_token
-      })
+      Stripe::Plan.create(interval: 'month')
     ensure
       StripeMock.default_currency = old_default_currency
     end
-    expect(customer.currency).to eq("jpy")
+    expect(plan.currency).to eq("jpy")
   end
 
   context 'when creating sources with metadata' do

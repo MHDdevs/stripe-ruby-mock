@@ -7,9 +7,15 @@ module StripeMock
           attrs[:coupon]                 = coupon
           attrs[:start]                  = Time.now.to_i
           attrs[:end]                    = (DateTime.now >> coupon[:duration_in_months].to_i).to_time.to_i if coupon[:duration] == 'repeating'
+          attrs[:id]                     = new_id("di")
         end
 
         object[:discount] = Stripe::Discount.construct_from(discount_attrs)
+        object
+      end
+
+      def delete_coupon_from_object(object)
+        object[:discount] = nil
         object
       end
     end
