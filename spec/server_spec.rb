@@ -19,6 +19,7 @@ describe 'StripeMock Server', :mock_server => true do
 
   after { StripeMock.stop_client(:clear_server_data => true) }
 
+  let(:product) { stripe_helper.create_product }
 
   it "uses an RPC client for mock requests" do
     charge = Stripe::Charge.create(
@@ -37,21 +38,23 @@ describe 'StripeMock Server', :mock_server => true do
     customer = Stripe::Customer.create(email: 'johnny@appleseed.com')
     expect(customer.email).to eq('johnny@appleseed.com')
 
-    server_customer_data = StripeMock.client.get_server_data(:customers)[customer.id]
+    server_customer_data = StripeMock.client.get_server_data(:customers)
+    server_customer_data = server_customer_data[server_customer_data.keys.first][customer.id.to_sym]
     expect(server_customer_data).to_not be_nil
     expect(server_customer_data[:email]).to eq('johnny@appleseed.com')
 
     StripeMock.stop_client
     StripeMock.start_client
 
-    server_customer_data = StripeMock.client.get_server_data(:customers)[customer.id]
+    server_customer_data = StripeMock.client.get_server_data(:customers)
+    server_customer_data = server_customer_data[server_customer_data.keys.first][customer.id.to_sym]
     expect(server_customer_data).to_not be_nil
     expect(server_customer_data[:email]).to eq('johnny@appleseed.com')
   end
 
 
   it "returns a response with symbolized hash keys" do
-    stripe_helper.create_plan(id: 'x')
+    stripe_helper.create_plan(id: 'x', product: product.id)
     response, api_key = StripeMock.redirect_to_mock_server('get', '/v1/plans/x', api_key: 'xxx')
     response.data.keys.each {|k| expect(k).to be_a(Symbol) }
   end
